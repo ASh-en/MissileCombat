@@ -74,9 +74,9 @@ def _get_prepare_config(parser: argparse.ArgumentParser):
                        help="By default None. set the path to pretrained model.")
     group.add_argument("--use-wandb", action='store_true', default=False,
                        help="[for wandb usage], by default False, if set, will log date to wandb server.")
-    group.add_argument("--user-name", type=str, default='liuqh',
+    group.add_argument("--user-name", type=str, default='ash0o0',
                        help="for setprobtitle use")
-    group.add_argument("--wandb-name", type=str, default='liuqh',
+    group.add_argument("--wandb-name", type=str, default='ash0o0',
                        help="[for wandb usage], to specify user's name for simply collecting training data.")
     return parser
 
@@ -246,10 +246,14 @@ def _get_save_config(parser: argparse.ArgumentParser):
     Save parameters:
         --save-interval <int>
             time duration between contiunous twice models saving.
+        --save-best
+            By default false:save the latest model. If set, save the best model.
     """
     group = parser.add_argument_group("Save parameters")
     group.add_argument("--save-interval", type=int, default=1,
                        help="time duration between contiunous twice models saving. (default 1)")
+    group.add_argument("--save-best", action='store_true', default=False,
+                       help="By default false:save the latest model. If set, save the best model.")
     return parser
 
 
