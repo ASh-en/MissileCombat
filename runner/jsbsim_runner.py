@@ -97,6 +97,12 @@ class JSBSimRunner(Runner):
                 self.eval(self.total_num_steps)
 
             # save model
+            if self.save_best:
+                average_reward = self.buffer.rewards.sum() / (self.buffer.masks == False).sum()
+                if average_reward > self.best_reward:
+                    logging.info("episode {} : average episode rewards is {}".format(episode, average_reward))
+                    self.best_reward = average_reward
+                    self.save(episode, True)
             if (episode % self.save_interval == 0) or (episode == episodes - 1):
                 self.save(episode)
 
@@ -202,8 +208,13 @@ class JSBSimRunner(Runner):
         render_infos['render_episode_reward'] = render_episode_rewards
         logging.info("render episode reward of agent: " + str(render_infos['render_episode_reward']))
 
-    def save(self, episode):
+    def save(self, episode, best=False):
+
         policy_actor_state_dict = self.policy.actor.state_dict()
-        torch.save(policy_actor_state_dict, str(self.save_dir) + '/actor_latest.pt')
         policy_critic_state_dict = self.policy.critic.state_dict()
-        torch.save(policy_critic_state_dict, str(self.save_dir) + '/critic_latest.pt')
+        if best:
+            torch.save(policy_actor_state_dict, str(self.save_dir) + '/actor_best.pt')
+            torch.save(policy_critic_state_dict, str(self.save_dir) + '/critic_best.pt')
+        else:
+            torch.save(policy_actor_state_dict, str(self.save_dir) + '/actor_latest.pt')
+            torch.save(policy_critic_state_dict, str(self.save_dir) + '/critic_latest.pt')

@@ -28,6 +28,9 @@ class Runner(object):
         self.n_eval_rollout_threads = self.all_args.n_eval_rollout_threads
         self.buffer_size = self.all_args.buffer_size
         self.use_wandb = self.all_args.use_wandb
+        # save mode
+        self.save_best = self.all_args.save_best
+        self.best_reward = 0
 
         # interval
         self.save_interval = self.all_args.save_interval
@@ -45,6 +48,7 @@ class Runner(object):
             self.save_dir = str(self.run_dir)
             if not os.path.exists(self.save_dir):
                 os.makedirs(self.save_dir)
+
 
         self.load()
 

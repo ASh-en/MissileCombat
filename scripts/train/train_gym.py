@@ -122,6 +122,7 @@ def main(args):
     parser = get_config()
     all_args = parse_args(args, parser)
 
+
     # seed
     np.random.seed(all_args.seed)
     random.seed(all_args.seed)
@@ -169,6 +170,12 @@ def main(args):
         run_dir = run_dir / curr_run
         if not run_dir.exists():
             os.makedirs(str(run_dir))
+
+    # save cmd
+    with open(run_dir / 'cmd.log', 'w') as f:
+        f.write(os.path.abspath(__file__) + '\n')
+        args_str = ' '.join(args)
+        f.writelines("--" + param.strip() + '\n' for param in args_str.split("--") if param.strip())
 
     setproctitle.setproctitle(str(all_args.algorithm_name) + "-" + str(all_args.env_name)
                               + "-" + str(all_args.experiment_name) + "@" + str(all_args.user_name))
