@@ -1,3 +1,4 @@
+import sys
 import time
 import torch
 import logging
@@ -31,7 +32,7 @@ class JSBSimRunner(Runner):
         self.buffer = ReplayBuffer(self.all_args, self.num_agents, self.obs_space, self.act_space)
 
         if self.model_dir is not None:
-            self.restore()
+            self.restore(self.use_best)
 
     def run(self):
         self.warmup()
@@ -43,6 +44,9 @@ class JSBSimRunner(Runner):
         for episode in range(episodes):
 
             heading_turns_list = []
+            # 20240426 add by ash0^0
+            end_step_list = []
+            termination_list = []
 
             for step in range(self.buffer_size):
                 # Sample actions
@@ -55,6 +59,10 @@ class JSBSimRunner(Runner):
                 for info in infos:
                     if 'heading_turn_counts' in info:
                         heading_turns_list.append(info['heading_turn_counts'])
+                    if 'end_step' in info:
+                        end_step_list.append(info['end_step'])
+                    if 'termination' in info:
+                        termination_list.append(info['termination'])
 
                 data = obs, actions, rewards, dones, action_log_probs, values, rnn_states_actor, rnn_states_critic
 
@@ -86,10 +94,43 @@ class JSBSimRunner(Runner):
 
                 train_infos["average_episode_rewards"] = self.buffer.rewards.sum() / (self.buffer.masks == False).sum()
                 logging.info("average episode rewards is {}".format(train_infos["average_episode_rewards"]))
-
+                done_counts = len(end_step_list)
                 if len(heading_turns_list):
                     train_infos["average_heading_turns"] = np.mean(heading_turns_list)
                     logging.info("average heading turns is {}".format(train_infos["average_heading_turns"]))
+                if len(end_step_list):
+                    train_infos["average_end_steps"] = np.mean(end_step_list)
+                    logging.info("average end steps is {}".format(train_infos["average_end_steps"]))
+                if len(termination_list):
+                    # termination = 1 | 2 | 4 | 8 | 16
+                    # unreach_heading | extreme_state | overload | low_altitude | timeout
+                    unreach_heading_counts = 0
+                    extreme_state_counts = 0
+                    overload_counts = 0
+                    low_altitude_counts = 0
+                    timeout_counts = 0
+                    for termination in termination_list:
+                        unreach_heading_counts += (termination & 1)
+                        extreme_state_counts += ((termination >> 1) & 1)
+                        overload_counts += ((termination >> 2) & 1)
+                        low_altitude_counts += ((termination >> 3) & 1)
+                        timeout_counts += ((termination >> 4) & 1)
+                    train_infos["unreach_heading_prop"] = unreach_heading_counts / done_counts
+                    train_infos["extreme_state_prop"] = extreme_state_counts / done_counts
+                    train_infos["overload_prop"] = overload_counts / done_counts
+                    train_infos["low_altitude_prop"] = low_altitude_counts / done_counts
+                    train_infos["timeout_prop"] = timeout_counts / done_counts
+                    train_infos["done_counts"] = done_counts
+                    logging.info("{:^20} | {:^20} | {:^20} | {:^20} | {:^20} | {:^20}"
+                                 .format("done_counts", "unreach_heading_prop", "extreme_state_prop",
+                                         "overload_prop", "low_altitude_prop", "timeout_prop"))
+                    logging.info("{:^20} | {:^20.4f} | {:^20.4f} | {:^20.4f} | {:^20.4f} | {:^20.4f}"
+                                 .format(train_infos["done_counts"], train_infos["unreach_heading_prop"], train_infos["extreme_state_prop"],
+                                         train_infos["overload_prop"], train_infos["low_altitude_prop"], train_infos["timeout_prop"]))
+
+
+
+
                 self.log_info(train_infos, self.total_num_steps)
 
             # eval
@@ -100,7 +141,7 @@ class JSBSimRunner(Runner):
             if self.save_best:
                 average_reward = self.buffer.rewards.sum() / (self.buffer.masks == False).sum()
                 if average_reward > self.best_reward:
-                    logging.info("episode {} : average episode rewards is {}".format(episode, average_reward))
+                    logging.info("save best model on episode {} : average episode rewards is {}".format(episode, average_reward))
                     self.best_reward = average_reward
                     self.save(episode, True)
             if (episode % self.save_interval == 0) or (episode == episodes - 1):
@@ -218,3 +259,19 @@ class JSBSimRunner(Runner):
         else:
             torch.save(policy_actor_state_dict, str(self.save_dir) + '/actor_latest.pt')
             torch.save(policy_critic_state_dict, str(self.save_dir) + '/critic_latest.pt')
+    def restore(self, best=False):
+        try:
+            if best:
+                policy_actor_state_dict = torch.load(str(self.model_dir) + '/actor_best.pt')
+                policy_critic_state_dict = torch.load(str(self.model_dir) + '/critic_best.pt')
+                logging.info("Use the best model file.")
+            else:
+                policy_actor_state_dict = torch.load(str(self.model_dir) + '/actor_latest.pt')
+                policy_critic_state_dict = torch.load(str(self.model_dir) + '/critic_latest.pt')
+                logging.info("Use the latest model file.")
+        except FileNotFoundError:
+            logging.error("Error: Model file not found.")
+            sys.exit(1)
+
+        self.policy.actor.load_state_dict(policy_actor_state_dict)
+        self.policy.critic.load_state_dict(policy_critic_state_dict)

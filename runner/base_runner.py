@@ -28,9 +28,11 @@ class Runner(object):
         self.n_eval_rollout_threads = self.all_args.n_eval_rollout_threads
         self.buffer_size = self.all_args.buffer_size
         self.use_wandb = self.all_args.use_wandb
-        # save mode
+        # save model
         self.save_best = self.all_args.save_best
         self.best_reward = 0
+        # use model
+        self.use_best = self.all_args.use_best
 
         # interval
         self.save_interval = self.all_args.save_interval

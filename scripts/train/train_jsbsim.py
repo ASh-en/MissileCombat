@@ -95,7 +95,7 @@ def main(args):
         logging.info("choose to use gpu...")
         device = torch.device("cuda:0")  # use cude mask to control using which GPU
         torch.set_num_threads(all_args.n_training_threads)
-        torch.backends.cudnn.deterministic = True   #确保输入固定时，输出不变
+        torch.backends.cudnn.deterministic = True   
         torch.backends.cudnn.benchmark = True
     else:
         logging.info("choose to use cpu...")
@@ -131,11 +131,12 @@ def main(args):
         if not run_dir.exists():
             os.makedirs(str(run_dir))
 
-    # save cmd
-    with open(run_dir / 'cmd.log', 'w') as f:
-        f.write(os.path.abspath(__file__)+'\n')
-        args_str = ' '.join(args)
-        f.writelines("--" + param.strip() + '\n' for param in args_str.split("--") if param.strip())
+        # save cmd
+        with open(run_dir / 'cmd.log', 'w') as f:
+            f.write(os.path.abspath(__file__) + '\n')
+            args_str = ' '.join(args)
+            f.writelines("--" + param.strip() + '\n' for param in args_str.split("--") if param.strip())
+
 
     setproctitle.setproctitle(str(all_args.algorithm_name) + "-" + str(all_args.env_name)
                               + "-" + str(all_args.experiment_name) + "@" + str(all_args.user_name))

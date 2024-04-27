@@ -5,3 +5,4 @@ from .relative_altitude_reward import RelativeAltitudeReward
 from .heading_reward import HeadingReward
 from .missile_posture_reward import MissilePostureReward
 from .shoot_penalty_reward import ShootPenaltyReward
+from .timeout_reward import TimeoutReward

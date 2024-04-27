@@ -13,6 +13,7 @@ class UnreachHeading(BaseTerminationCondition):
         super().__init__(config)
         uid = list(config.aircraft_configs.keys())[0]
         aircraft_config = config.aircraft_configs[uid]
+        self.safe_altitude = 14000.  # Need to be greater than the safe altitude set in the altitude reward function 4km
         self.max_heading_increment = aircraft_config['max_heading_increment']
         self.max_altitude_increment = aircraft_config['max_altitude_increment']
         self.max_velocities_u_increment = aircraft_config['max_velocities_u_increment']
@@ -48,6 +49,9 @@ class UnreachHeading(BaseTerminationCondition):
                 new_heading = env.agents[agent_id].get_property_value(c.target_heading_deg) + delta_heading
                 new_heading = (new_heading + 360) % 360
                 new_altitude = env.agents[agent_id].get_property_value(c.target_altitude_ft) + delta_altitude
+                # Make sure the new target altitude is higher than the safe altitude
+                if new_altitude <= self.safe_altitude:
+                    new_altitude = self.safe_altitude + abs(delta_altitude)
                 new_velocities_u = env.agents[agent_id].get_property_value(c.target_velocities_u_mps) + delta_velocities_u
                 env.agents[agent_id].set_property_value(c.target_heading_deg, new_heading)
                 env.agents[agent_id].set_property_value(c.target_altitude_ft, new_altitude)
@@ -56,8 +60,11 @@ class UnreachHeading(BaseTerminationCondition):
                 env.heading_turn_counts += 1
                 self.log(f'current_step:{cur_step} target_heading:{new_heading} '
                          f'target_altitude_ft:{new_altitude} target_velocities_u_mps:{new_velocities_u}')
+
+
         if done:
             self.log(f'agent[{agent_id}] unreached heading. Total Steps={env.current_step}')
-            info['heading_turn_counts'] = env.heading_turn_counts
+            info['termination'] += 1
+            # info['heading_turn_counts'] = env.heading_turn_counts
         success = False
         return done, success, info

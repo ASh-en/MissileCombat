@@ -72,6 +72,8 @@ def _get_prepare_config(parser: argparse.ArgumentParser):
                        help='Number of environment steps to train (default: 1e7)')
     group.add_argument("--model-dir", type=str, default=None,
                        help="By default None. set the path to pretrained model.")
+    group.add_argument("--use-best", action='store_true', default=False,
+                       help="By default False. if set, will use pretrained best model,not the latest one.")
     group.add_argument("--use-wandb", action='store_true', default=False,
                        help="[for wandb usage], by default False, if set, will log date to wandb server.")
     group.add_argument("--user-name", type=str, default='ash0o0',

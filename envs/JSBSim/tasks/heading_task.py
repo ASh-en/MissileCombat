@@ -1,8 +1,9 @@
 import numpy as np
+from typing import List, Tuple
 from gymnasium import spaces
 from .task_base import BaseTask
 from ..core.catalog import Catalog as c
-from ..reward_functions import AltitudeReward, HeadingReward
+from ..reward_functions import AltitudeReward, HeadingReward, TimeoutReward
 from ..termination_conditions import ExtremeState, LowAltitude, Overload, Timeout, UnreachHeading
 
 
@@ -16,6 +17,7 @@ class HeadingTask(BaseTask):
         self.reward_functions = [
             HeadingReward(self.config),
             AltitudeReward(self.config),
+            TimeoutReward(self.config),
         ]
         self.termination_conditions = [
             UnreachHeading(self.config),
@@ -64,6 +66,37 @@ class HeadingTask(BaseTask):
         # aileron, elevator, rudder, throttle
         self.action_space = spaces.MultiDiscrete([41, 41, 41, 30])
 
+
+    def get_termination(self, env, agent_id, info={}) -> Tuple[bool, dict]:
+        """
+        Aggregate termination conditions
+
+        Args:
+            env: environment instance
+            agent_id: current agent id
+            info: additional info
+
+        Returns:
+            (tuple):
+                done(bool): whether the episode has terminated
+                info(dict): additional info
+        """
+        done = False
+        success = True
+        info['termination'] = 0
+        for condition in self.termination_conditions:
+            d, s, info = condition.get_termination(self, env, agent_id, info)
+            done = done or d
+            success = success and s
+
+            if done:
+                info['heading_turn_counts'] = env.heading_turn_counts
+                info['end_step'] = env.current_step
+                break
+        if info['termination'] == 0:
+            del info['termination']
+        return done, info
+
     def get_obs(self, env, agent_id):
         """
         Convert simulation states into the format of observation_space.
@@ -108,3 +141,4 @@ class HeadingTask(BaseTask):
         norm_act[2] = action[2] * 2. / (self.action_space.nvec[2] - 1.) - 1.
         norm_act[3] = action[3] * 0.5 / (self.action_space.nvec[3] - 1.) + 0.4
         return norm_act
+
