@@ -7,7 +7,7 @@ from ..reward_functions import AltitudeReward, HeadingReward, TimeoutReward
 from ..termination_conditions import ExtremeState, LowAltitude, Overload, Timeout, UnreachHeading
 from ..utils.utils import body2ned, ned2body
 
-class HeadingTask(BaseTask):
+class RenHeadingTask(BaseTask):
     '''
     Control target heading with discrete action space
     '''
@@ -43,32 +43,25 @@ class HeadingTask(BaseTask):
         return 1
 
     def load_variables(self):
-        if self.type == "ned_direct" or self.type == "ned2body":
-            velocity_vars = [
-                c.velocities_v_north_mps,
-                c.velocities_v_east_mps,
-                c.velocities_v_down_mps
-            ]
-        else:
-            velocity_vars = [
-                c.velocities_u_mps,     # v_body_x
-                c.velocities_v_mps,     # v_body_y
-                c.velocities_w_mps      # v_body_z
-            ]
-
         self.state_var = [
-            c.delta_altitude,       # 0. delta_h   (unit: m)
-            c.delta_heading,        # 1. delta_heading  (unit: °)
-            c.delta_velocities_u,   # 2. delta_v   (unit: m/s)
-            c.position_h_sl_m,      # 3. altitude  (unit: m)
-            c.attitude_roll_rad,    # 4. roll      (unit: rad)
-            c.attitude_pitch_rad    # 5. pitch     (unit: rad)
-        ] + velocity_vars + [
-            c.velocities_vc_mps,    # 9. vc        (unit: m/s)
-            c.attitude_psi_rad      # 10.yaw       (unit: rad)
+            c.delta_altitude,
+            c.delta_heading,
+            c.delta_velocities_u,
+            c.position_h_sl_m,
+            c.attitude_pitch_rad,
+            c.attitude_roll_rad,
+            c.velocities_u_mps,
+            c.velocities_v_mps,
+            c.velocities_w_mps,
+            c.velocities_p_rad_sec,
+            c.velocities_q_rad_sec,
+            c.velocities_r_rad_sec,
+            c.fcs_left_aileron_pos_norm,
+            c.fcs_right_aileron_pos_norm,
+            c.fcs_elevator_pos_norm,
+            c.fcs_rudder_pos_norm,
+            c.aero_beta_deg
         ]
-
-
         self.action_var = [
             c.fcs_aileron_cmd_norm,             # [-1., 1.]
             c.fcs_elevator_cmd_norm,            # [-1., 1.]
@@ -85,7 +78,7 @@ class HeadingTask(BaseTask):
         ]
 
     def load_observation_space(self):
-        self.observation_space = spaces.Box(low=-10, high=10., shape=(12,))
+        self.observation_space = spaces.Box(low=-10, high=10., shape=(17,))
 
     def load_action_space(self):
         # aileron, elevator, rudder, throttle
@@ -126,63 +119,35 @@ class HeadingTask(BaseTask):
         """
         Convert simulation states into the format of observation_space.
 
-        observation(dim 12):
-            0. ego delta altitude      (unit: km)
-            1. ego delta heading       (unit rad)
-            2. ego delta velocities_u  (unit: mh)
-            3. ego_altitude            (unit: 5km)
-            4. ego_roll_sin
-            5. ego_roll_cos
-            6. ego_pitch_sin
-            7. ego_pitch_cos
-            8. ego v_body_x            (unit: mh)
-            9. ego v_body_y            (unit: mh)
-            10. ego v_body_z           (unit: mh)
-            11. ego_vc                 (unit: mh)
+
         """
         obs = np.array(env.agents[agent_id].get_property_values(self.state_var))
-        norm_obs = np.zeros(12)
+        norm_obs = np.zeros(17)
         if self.use_noise:
             # delta_altitude = target_altitude - position_h_sl
             noise = np.random.normal(0, self.std)
-            obs[0] -= noise[0]  # 0. ego delta altitude (unit: m)
-            obs[1] += noise[1]  # 1. ego delta heading  (unit deg)
-            obs[2] -= noise[2]  # 2. ego delta velocities_u (unit: m)
-            obs[3] += noise[0]  # 3. ego_altitude   (unit: m)
-            obs[6] += noise[2]  # 8. ego_v_north    (unit: m)
-            obs[7] += noise[3]  # 9. ego_v_east     (unit: m)
-            obs[8] += noise[4]  # 10. ego_v_down    (unit: m)
+
         if self.use_data_loss:
             not_loss = np.array(np.random.binomial(1, 1-self.data_loss_prop, size=11))
-            obs = obs * not_loss
+            # obs = obs * not_loss
 
-        norm_obs[0] = obs[0] / 1000         # 0. ego delta altitude (unit: 1km)
-        norm_obs[1] = obs[1] / 180 * np.pi  # 1. ego delta heading  (unit rad)
-        norm_obs[2] = obs[2] / 340          # 2. ego delta velocities_u (unit: mh)
-        norm_obs[3] = obs[3] / 5000         # 3. ego_altitude   (unit: 5km)
-        norm_obs[4] = np.sin(obs[4])        # 4. ego_roll_sin
-        norm_obs[5] = np.cos(obs[4])        # 5. ego_roll_cos
-        norm_obs[6] = np.sin(obs[5])        # 6. ego_pitch_sin
-        norm_obs[7] = np.cos(obs[5])        # 7. ego_pitch_cos
-
-        if self.type == "body2ned":
-            v_body = obs[6:9]
-            v_ned = body2ned(v_body, obs[4], obs[5], obs[10])
-            norm_obs[8] = v_ned[0] / 340          # 8. ego_v_north    (unit: mh)
-            norm_obs[9] = v_ned[1] / 340          # 9. ego_v_east     (unit: mh)
-            norm_obs[10] = v_ned[2] / 340         # 10. ego_v_down    (unit: mh)
-        elif self.type == "ned2body":
-            v_ned = obs[6:9]
-            v_body = ned2body(v_ned, obs[4], obs[5], obs[10])
-            norm_obs[8] = v_body[0] / 340          # 8. ego_v_north    (unit: mh)
-            norm_obs[9] = v_body[1] / 340          # 9. ego_v_east     (unit: mh)
-            norm_obs[10] = v_body[2] / 340         # 10. ego_v_down    (unit: mh)
-        else:
-            norm_obs[8] = obs[6] / 340  # 8. ego_v_north    (unit: mh)
-            norm_obs[9] = obs[7] / 340  # 9. ego_v_east     (unit: mh)
-            norm_obs[10] = obs[8] / 340  # 10. ego_v_down    (unit: mh)
-
-        norm_obs[11] = obs[9] / 340         # 11. ego_vc        (unit: mh)
+        norm_obs[0] = obs[0] / 1000             # 0. ego delta altitude (unit: 1km)
+        norm_obs[1] = obs[1] / 180 * np.pi      # 1. ego delta heading  (unit rad)
+        norm_obs[2] = obs[2] / 340              # 2. ego delta velocities_u (unit: mh)
+        norm_obs[3] = obs[3] / 5000             # 3. ego_altitude   (unit: 5km)
+        norm_obs[4] = obs[4]                    # 4. ego_pitch      (unit rad)
+        norm_obs[5] = obs[5]                    # 5. ego_roll       (unit rad)
+        norm_obs[6] = obs[6] / 340              # 6. body_v_x       (unit: mh)
+        norm_obs[7] = obs[7] / 340              # 7. body_v_y       (unit: mh)
+        norm_obs[8] = obs[8] / 340              # 8. body_v_z       (unit: mh)
+        norm_obs[9] = obs[9]                    # 9. p              (unit: rad/s)
+        norm_obs[10] = obs[10]                  # 10. q             (unit: rad/s)
+        norm_obs[11] = obs[11]                  # 11. r             (unit: rad/s)
+        norm_obs[12] = obs[12]                  # 12. left_aileron_pos_norm
+        norm_obs[13] = obs[13]                  # 13. right_aileron_pos_norm
+        norm_obs[14] = obs[14]                  # 14. elevator_pos_norm
+        norm_obs[15] = obs[15]                  # 15. rudder_pos_norm
+        norm_obs[16] = obs[16] / 180 * np.pi    # 16. aero_beta     (unit rad)
 
         norm_obs = np.clip(norm_obs, self.observation_space.low, self.observation_space.high)
         return norm_obs

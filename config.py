@@ -20,6 +20,7 @@ def get_config():
     parser = _get_log_config(parser)
     parser = _get_eval_config(parser)
     parser = _get_render_config(parser)
+    # parser = _get_ekf_config(parser)
     return parser
 
 
@@ -306,6 +307,28 @@ def _get_render_config(parser: argparse.ArgumentParser):
     group.add_argument("--render-opponent-index", type=str, default='latest', help="the index of opponent policy in the opponent pool. by default latest")
     group.add_argument("--render-index", type=str, default='latest', help="the index of ego policy. by default latest")
     return parser
+
+# def _get_ekf_config(parser: argparse.ArgumentParser):
+#     '''
+#     ELK parameters:
+#         --use-elk
+#
+#         --use-noise
+#
+#         --use-data-loss
+#
+#         --data-loss-prop
+#
+#     '''
+#     group = parser.add_argument_group("EKF parameters")
+#     group.add_argument("--use-ekf", action='store_true', default=False,
+#                        help="[for ekf], by default False, if set, will use kalman filter.")
+#     group.add_argument("--use-noise", action='store_true', default=False,
+#                        help="[for noise], by default False, if set, will use Gaussian noise.")
+#     group.add_argument("--use-data-loss", action='store_true', default=False,
+#                        help="[for data loss], by default False, if set, will use data loss.")
+#     group.add_argument("--data-loss-prop", type=float, default=0.01,
+#                        help="[for data loss prop], will proportional data loss.")
 
 
 if __name__ == "__main__":

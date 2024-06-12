@@ -113,7 +113,7 @@ def main(args):
         run = wandb.init(config=all_args,
                          project=all_args.env_name,
                          notes=socket.gethostname(),
-                         name=f"{all_args.experiment_name}_seed{all_args.seed}",
+                         name=f"{all_args.experiment_name}_seed{all_args.seed}_{all_args.user_name}",
                          group=all_args.scenario_name,
                          dir=str(run_dir),
                          job_type="training",

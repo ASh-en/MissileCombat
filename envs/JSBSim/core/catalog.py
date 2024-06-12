@@ -565,5 +565,6 @@ class MixedCatalog(dict):
                     self[name] = Property(name_jsbsim=name_jsbsim, access=access)
 
 
+
 # an instantiation of MixedCatalog used for simulation
 Catalog = MixedCatalog()

@@ -83,6 +83,8 @@ class PPOTrainer():
         train_info['critic_grad_norm'] = 0
         train_info['ratio'] = 0
 
+        # The number of optimizations performed per training cycle
+        # It is also the number of times each Buffer is reused.
         for _ in range(self.ppo_epoch):
             if self.use_recurrent_policy:
                 data_generator = ReplayBuffer.recurrent_generator(buffer, self.num_mini_batch, self.data_chunk_length)

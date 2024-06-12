@@ -1,5 +1,6 @@
 from .env_base import BaseEnv
 from ..tasks.heading_task import HeadingTask
+from ..tasks.ren_heading_task import RenHeadingTask
 
 
 class SingleControlEnv(BaseEnv):
@@ -16,6 +17,8 @@ class SingleControlEnv(BaseEnv):
         taskname = getattr(self.config, 'task', None)
         if taskname == 'heading':
             self.task = HeadingTask(self.config)
+        elif taskname == 'ren_heading':
+            self.task = RenHeadingTask(self.config)
         else:
             raise NotImplementedError(f'Unknown taskname: {taskname}')
 

@@ -116,3 +116,39 @@ def in_range_rad(angle):
     if angle > np.pi:
         angle -= 2 * np.pi
     return angle
+
+def rotation_matrix(roll, pitch, yaw):
+    R_x = np.array([
+        [1, 0, 0],
+        [0, np.cos(roll), -np.sin(roll)],
+        [0, np.sin(roll), np.cos(roll)]
+    ])
+
+    R_y = np.array([
+        [np.cos(pitch), 0, np.sin(pitch)],
+        [0, 1, 0],
+        [-np.sin(pitch), 0, np.cos(pitch)]
+    ])
+
+    R_z = np.array([
+        [np.cos(yaw), -np.sin(yaw), 0],
+        [np.sin(yaw), np.cos(yaw), 0],
+        [0, 0, 1]
+    ])
+
+    R = np.dot(R_z, np.dot(R_y, R_x))
+    return R
+
+def body2ned(v_b, roll, pitch, yaw):
+    R = rotation_matrix(roll, pitch, yaw)
+    v_n = np.dot(R, v_b)
+    return v_n
+
+
+def ned2body(v_ned, roll, pitch, yaw):
+    R = rotation_matrix(roll, pitch, yaw)
+    # Convert vector from NED to Body frame
+    v_body = np.dot(R.T, v_ned)
+
+    return v_body
+

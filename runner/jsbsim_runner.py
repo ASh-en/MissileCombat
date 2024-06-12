@@ -102,31 +102,35 @@ class JSBSimRunner(Runner):
                     train_infos["average_end_steps"] = np.mean(end_step_list)
                     logging.info("average end steps is {}".format(train_infos["average_end_steps"]))
                 if len(termination_list):
-                    # termination = 1 | 2 | 4 | 8 | 16
-                    # unreach_heading | extreme_state | overload | low_altitude | timeout
+                    # termination = 1 | 2 | 4 | 8 | 16 | 32
+                    # unreach_heading | extreme_state | overload | low_altitude | timeout | safe_return
                     unreach_heading_counts = 0
                     extreme_state_counts = 0
                     overload_counts = 0
                     low_altitude_counts = 0
                     timeout_counts = 0
+                    safe_return_counts = 0
                     for termination in termination_list:
                         unreach_heading_counts += (termination & 1)
                         extreme_state_counts += ((termination >> 1) & 1)
                         overload_counts += ((termination >> 2) & 1)
                         low_altitude_counts += ((termination >> 3) & 1)
                         timeout_counts += ((termination >> 4) & 1)
+                        safe_return_counts += ((termination >> 5) & 1)
+
                     train_infos["unreach_heading_prop"] = unreach_heading_counts / done_counts
                     train_infos["extreme_state_prop"] = extreme_state_counts / done_counts
                     train_infos["overload_prop"] = overload_counts / done_counts
                     train_infos["low_altitude_prop"] = low_altitude_counts / done_counts
                     train_infos["timeout_prop"] = timeout_counts / done_counts
+                    train_infos["safe_return_prop"] = safe_return_counts / done_counts
                     train_infos["done_counts"] = done_counts
-                    logging.info("{:^20} | {:^20} | {:^20} | {:^20} | {:^20} | {:^20}"
+                    logging.info("{:^20} | {:^20} | {:^20} | {:^20} | {:^20} | {:^20} | {:^20}"
                                  .format("done_counts", "unreach_heading_prop", "extreme_state_prop",
-                                         "overload_prop", "low_altitude_prop", "timeout_prop"))
-                    logging.info("{:^20} | {:^20.4f} | {:^20.4f} | {:^20.4f} | {:^20.4f} | {:^20.4f}"
+                                         "overload_prop", "low_altitude_prop", "timeout_prop", "safe_return_prop"))
+                    logging.info("{:^20} | {:^20.4f} | {:^20.4f} | {:^20.4f} | {:^20.4f} | {:^20.4f} | {:^20.4f}"
                                  .format(train_infos["done_counts"], train_infos["unreach_heading_prop"], train_infos["extreme_state_prop"],
-                                         train_infos["overload_prop"], train_infos["low_altitude_prop"], train_infos["timeout_prop"]))
+                                         train_infos["overload_prop"], train_infos["low_altitude_prop"], train_infos["timeout_prop"], train_infos["safe_return_prop"]))
 
 
 

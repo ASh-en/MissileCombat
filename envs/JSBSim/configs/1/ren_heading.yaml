@@ -1,5 +1,5 @@
 # task config
-task: heading
+task: ren_heading
 
 # simulation config
 sim_freq: 60

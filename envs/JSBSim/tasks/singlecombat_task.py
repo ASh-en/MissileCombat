@@ -81,7 +81,23 @@ class SingleCombatTask(BaseTask):
     def get_obs(self, env, agent_id):
         """
         Convert simulation states into the format of observation_space
-
+        - state var
+            - [0] lontitude              (unit: °)
+            - [1] latitude               (unit: °)
+            - [2] altitude               (unit: m)
+            - [3] roll                   (unit: rad)
+            - [4] pitch                  (unit: rad)
+            - [5] yaw                    (unit: rad)
+            - [6] v_north                (unit: m/s)
+            - [7] v_east                 (unit: m/s)
+            - [8] v_down                 (unit: m/s)
+            - [9] v_body_x               (unit: m/s)
+            - [10] v_body_y              (unit: m/s)
+            - [11] v_body_z              (unit: m/s)
+            - [12] vc                    (unit: m/s)
+            - [13] a_north               (unit: G)
+            - [14] a_east                (unit: G)
+            - [15] a_down                (unit: G)
         ------
         Returns: (np.ndarray)
         - ego info

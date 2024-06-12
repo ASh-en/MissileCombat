@@ -70,6 +70,7 @@ class PostureReward(BaseRewardFunction):
             return lambda R: max(np.clip(1.2 * np.min([np.exp(-(R - self.target_dist) * 0.21), 1]) /
                                          (1. + np.exp(-(R - self.target_dist + 1) * 0.8)), 0.3, 1), np.sign(7 - R))
         elif version == 'v3':
+            # 0~5: 1 ,5~10: 1~0, 10~ : 0.2~0
             return lambda R: 1 * (R < 5) + (R >= 5) * np.clip(-0.032 * R**2 + 0.284 * R + 0.38, 0, 1) + np.clip(np.exp(-0.16 * R), 0, 0.2)
         else:
             raise NotImplementedError(f"Unknown range function version: {version}")
